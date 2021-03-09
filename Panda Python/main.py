@@ -19,12 +19,23 @@ def write_to_excel():
     meta_titlecol = meta_title()
     meta_keywordscol = meta_keywords()
     meta_descriptioncol = meta_description()
-    output = pd.DataFrame({'product_type': product_typecol,"product_websites": product_websitescol, "name": name_col,
-                           "weight": weight_col,
-                           "product_online": product_onlinecol, "tax_class_name": taxable_goodscol,
-                           "visibility": visibility_col, "price": price_col, "url_key": url_keycol,
-                           "meta_title": meta_titlecol, "meta_keywords": meta_keywordscol,
-                           "meta_description": meta_descriptioncol})
+    additional_attributescol = additional_attributes()
+    qty_col = qty()
+    is_in_stockcol = is_in_stock()
+    website_idcol = website_id()
+    outdict = {'product_type': product_typecol, "product_websites": product_websitescol, "name": name_col,
+               "weight": weight_col,
+               "product_online": product_onlinecol, "tax_class_name": taxable_goodscol,
+               "visibility": visibility_col, "price": price_col, "url_key": url_keycol,
+               "meta_title": meta_titlecol, "meta_keywords": meta_keywordscol,
+               "meta_description": meta_descriptioncol, "additional_attributes": additional_attributescol,
+               "qty": qty_col, "is_in_stock": is_in_stockcol, "website_id": website_idcol,
+               "related_skus": ["related_skus"],
+               "": ["related_position"], "crosssell_skus": ["crosssell_skus"],
+               "crosssell_position": ["crosssell_position"], "upsell_skus": ["upsell_skus"],
+               "upsell_position": ["upsell_position"]}
+    output = pd.DataFrame.from_dict(outdict, orient='index')
+    output = output.transpose()
     output.to_excel(writer, index=False, header=False, sheet_name='Sheet1')
     writer.save()
 
@@ -41,6 +52,7 @@ def product_type():
             group = row.item()
         else:
             rows_list.append("simple")
+    rows_list.append("configurable")
     print(len(rows_list))
     return rows_list
 
@@ -76,6 +88,8 @@ def name():
             val = row.item()
             new = val + " " + colours.loc[index, 'COLOUR'] + " " + sizes.loc[index, 'SIZE']
             rows_list.append(new)
+    final = group
+    rows_list.append(final)
     print(len(rows_list))
     return rows_list
 
@@ -125,6 +139,7 @@ def visibility():
             group = row.item()
         else:
             rows_list.append("Not Visible Individually")
+    rows_list.append("Catalog, Search")
     print(len(rows_list))
     return rows_list
 
@@ -146,8 +161,9 @@ def price():
         else:
             new = prices.loc[index, 'PRICE']
             rows_list.append(new)
+    final = current_price
+    rows_list.append(final)
     print(len(rows_list))
-    print("price col complete")
     return rows_list
 
 
@@ -160,7 +176,6 @@ def url_key():
         val = val.replace(" ", "-").replace("'", "").replace("(", "").replace(")", "").replace("/", "-")
         rows_list.append(val)
     print(len(rows_list))
-    print("url key col complete")
     return rows_list
 
 
@@ -181,8 +196,9 @@ def meta_title():
         else:
             new = dept.loc[index, 'DEPARTMENT']
             rows_list.append(new)
+    final = current_dept
+    rows_list.append(final)
     print(len(rows_list))
-    print("meta_title col complete")
     return rows_list
 
 
@@ -190,7 +206,6 @@ def meta_keywords():
     rows = meta_title()
     rows.pop(0)
     rows.insert(0, "meta_keywords")
-    print("meta_keywords col complete")
     return rows
 
 
@@ -198,8 +213,88 @@ def meta_description():
     rows = meta_title()
     rows.pop(0)
     rows.insert(0, "meta_description")
-    print("meta_description col complete")
     return rows
+
+
+def additional_attributes():
+    names = pd.read_excel('input.xlsx', sheet_name="new codes",
+                          usecols=['ITEM DESCRIPTION'])
+    colours = pd.read_excel('input.xlsx', sheet_name="new codes",
+                            usecols=["COLOUR"])
+    sizes = pd.read_excel('input.xlsx', sheet_name="new codes",
+                          usecols=["SIZE"])
+    brands = pd.read_excel('input.xlsx', sheet_name="new codes",
+                           usecols=['DEPARTMENT'])
+    activity = pd.read_excel('input.xlsx', sheet_name="new codes",
+                             usecols=['ACTIVITY'])
+    group = names.loc[0, 'ITEM DESCRIPTION']
+    rows_list = ["additional_attributes"]
+    mens = "M"
+    womens = "W"
+    kids = ["Y", "G", "B"]
+    size_guide = ",size="
+    for index, row in names.iterrows():
+        first_char = row[0][0]
+        if first_char == womens:
+            size_guide = ",womens_size="
+        elif first_char in kids:
+            size_guide = ",kids_size="
+        elif first_char != womens and first_char == mens and first_char not in kids:
+            size_guide = ",size="
+        if row.item() != group:
+            current_row = "colour=" + colours.loc[index, 'COLOUR'] + size_guide + sizes.loc[
+                index, 'SIZE'] + ",brands=" + \
+                          brands.loc[index, 'DEPARTMENT'] + ",activity=" + activity.loc[index, 'ACTIVITY']
+            rows_list.append(None)
+            group = row.item()
+            rows_list.append(current_row)
+        else:
+            new = "colour=" + colours.loc[index, 'COLOUR'] + size_guide + sizes.loc[index, 'SIZE'] + ",brands=" + \
+                  brands.loc[index, 'DEPARTMENT'] + ",activity=" + activity.loc[index, 'ACTIVITY']
+            rows_list.append(new)
+    rows_list.append(None)
+    print(len(rows_list))
+    return rows_list
+
+
+def qty():
+    names = pd.read_excel('input.xlsx', sheet_name="new codes",
+                          usecols=['WEB DESCRIPTION'])
+    group = names.loc[0, 'WEB DESCRIPTION']
+    rows_list = ["gty"]
+    for index, row in names.iterrows():
+        if row.item() != group:
+            rows_list.append(0)
+            rows_list.append(1)
+            group = row.item()
+        else:
+            rows_list.append(1)
+    rows_list.append(0)
+    print(len(rows_list))
+    return rows_list
+
+
+def is_in_stock():
+    rows = name()
+    rows.pop(0)
+    numrows = len(rows)
+    rows_list = ["is_in_stock"]
+    for i in range(numrows):
+        rows_list.append(1)
+    print(len(rows_list))
+    return rows_list
+
+
+def website_id():
+    rows = name()
+    rows.pop(0)
+    numrows = len(rows)
+    rows_list = ["website_id"]
+    for i in range(numrows):
+        rows_list.append(0)
+    print(len(rows_list))
+    return rows_list
+
 
 
 if __name__ == '__main__':
