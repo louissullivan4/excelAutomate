@@ -7,6 +7,7 @@ def main():
 
 def write_to_excel():
     writer = pd.ExcelWriter('output.xlsx', engine="openpyxl")
+    # attribute_set_codecol = attribute_set_code()
     product_typecol = product_type()
     product_websitescol = product_websites()
     name_col = name()
@@ -23,7 +24,14 @@ def write_to_excel():
     qty_col = qty()
     is_in_stockcol = is_in_stock()
     website_idcol = website_id()
-    outdict = {'product_type': product_typecol, "product_websites": product_websitescol, "name": name_col,
+    base_imagecol = base_image()
+    small_imagecol = small_image()
+    thumbnail_imagecol = thumbnail_image()
+    additional_imagescol = additional_images()
+    outdict = {"sku": ["sku"],
+               "store_view_code": ["store_view_code"], "attribute_set_code": ["attribute_set_code"],
+               'product_type': product_typecol, "categories": ["categories"], "product_websites": product_websitescol,
+               "name": name_col, "description": ["description"], "short_description": ["short_description"],
                "weight": weight_col,
                "product_online": product_onlinecol, "tax_class_name": taxable_goodscol,
                "visibility": visibility_col, "price": price_col, "url_key": url_keycol,
@@ -31,13 +39,59 @@ def write_to_excel():
                "meta_description": meta_descriptioncol, "additional_attributes": additional_attributescol,
                "qty": qty_col, "is_in_stock": is_in_stockcol, "website_id": website_idcol,
                "related_skus": ["related_skus"],
-               "": ["related_position"], "crosssell_skus": ["crosssell_skus"],
+               "related_position": ["related_position"], "crosssell_skus": ["crosssell_skus"],
                "crosssell_position": ["crosssell_position"], "upsell_skus": ["upsell_skus"],
-               "upsell_position": ["upsell_position"]}
+               "upsell_position": ["upsell_position"], "base_image": base_imagecol,
+               "small_image": small_imagecol, "thumbnail_image": thumbnail_imagecol,
+               "additional_images": additional_imagescol,
+               "configurable_variations": ["configurable_variations"],
+               "configurable_variation_labels": ["configurable_variation_labels"],
+               "associated_skus": ["associated_skus"]}
     output = pd.DataFrame.from_dict(outdict, orient='index')
     output = output.transpose()
     output.to_excel(writer, index=False, header=False, sheet_name='Sheet1')
     writer.save()
+
+
+# def attribute_set_code():
+    #CURRENT ERRORS:
+     #- updates wrong rows
+     #-doesnt update dictionary so categories questioned mulitple times
+     #-keys in dictionary not seen
+#     cat_dict = {"Tops": "Tee Shirts", "Jackets": "Waterproof Jackets", "Accessories": "Baseball Caps",
+#                 "Pants": "Hiking Shorts", "Dresses & Skirts": "Dresses", "Footwear": "Walking Shoes"}
+#     names = pd.read_excel('input.xlsx', sheet_name="new codes",
+#                           usecols=['WEB DESCRIPTION'])
+#     category = pd.read_excel('input.xlsx', sheet_name="new codes",
+#                              usecols=['CATEGORY'])
+#     group = names.loc[0, 'WEB DESCRIPTION']
+#     current_category = category.loc[0, 'CATEGORY']
+#     rows_list = ["attribute_set_code"]
+#     for index, row in names.iterrows():
+#         if row.item() != group:
+#             if current_category not in cat_dict.values():
+#                 new_key = input(current_category + " is a new type. What category should it be added to?: ")
+#                 if new_key not in cat_dict.keys():
+#                     new_key = None
+#                 cat_dict.update({new_key: current_category})
+#                 current_category = category.loc[index, 'CATEGORY']
+#                 rows_list.append(new_key)
+#             else:
+#                 for key, value in cat_dict.items():
+#                     if value == current_category:
+#                         current_key = key
+#                         rows_list.append(current_key)
+#                         current_category = category.loc[index, 'CATEGORY']
+#             group = row.item()
+#         else:
+#             for key, value in cat_dict.items():
+#                 if value == current_category:
+#                     current_key = key
+#                     rows_list.append(current_key)
+#     final = current_category
+#     rows_list.append(final)
+#     print(len(rows_list))
+#     return rows_list
 
 
 def product_type():
@@ -295,6 +349,77 @@ def website_id():
     print(len(rows_list))
     return rows_list
 
+
+def base_image():
+    names = pd.read_excel('input.xlsx', sheet_name="new codes",
+                          usecols=['WEB DESCRIPTION'])
+    colours = pd.read_excel('input.xlsx', sheet_name="new codes",
+                            usecols=["COLOUR"])
+    group = names.loc[0, 'WEB DESCRIPTION']
+    current_image = names.loc[0, 'WEB DESCRIPTION']
+    rows_list = ["base_image"]
+    for index, row in names.iterrows():
+        if row.item() != group:
+            last_prod = group + " " + colours.loc[index - 1, 'COLOUR']
+            last_prod = last_prod.lower()
+            last_prod = last_prod.replace(" ", "-").replace("'", "").replace("(", "").replace(")", "").replace("/", "-")
+            last_prod = last_prod + "-ss21"
+            last_prod = last_prod + ".jpg"
+            rows_list.append(last_prod)
+            val = row.item()
+            new = val + " " + colours.loc[index, 'COLOUR']
+            new = new.lower()
+            new = new.replace(" ", "-").replace("'", "").replace("(", "").replace(")", "").replace("/", "-")
+            new = new + "-ss21"
+            new = new + ".jpg"
+            rows_list.append(new)
+            current_image = new
+            group = row.item()
+        else:
+            val = row.item()
+            new = val + " " + colours.loc[index, 'COLOUR']
+            new = new.lower()
+            new = new.replace(" ", "-").replace("'", "").replace("(", "").replace(")", "").replace("/", "-")
+            new = new + "-ss21"
+            new = new + ".jpg"
+            rows_list.append(new)
+    final = current_image
+    rows_list.append(final)
+    print(len(rows_list))
+    return rows_list
+
+
+def small_image():
+    rows = base_image()
+    rows.pop(0)
+    rows_list = ["small_image"]
+    for i in rows:
+        rows_list.append(i)
+    print(len(rows_list))
+    return rows_list
+
+
+def thumbnail_image():
+    rows = base_image()
+    rows.pop(0)
+    rows_list = ["thumbnail_image"]
+    for i in rows:
+        rows_list.append(i)
+    print(len(rows_list))
+    return rows_list
+
+
+def additional_images():
+    rows = base_image()
+    rows.pop(0)
+    rows_list = ["additional_images"]
+    for i in rows:
+        new = i.replace(".jpg", "")
+        new = new + "-alt"
+        new = new + ".jpg"
+        rows_list.append(new)
+    print(len(rows_list))
+    return rows_list
 
 
 if __name__ == '__main__':
